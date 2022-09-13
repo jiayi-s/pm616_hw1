@@ -1,4 +1,4 @@
-# PM 616 Homework 1 
+# PM 616 Homework 1 Sylvia Shen
 
 - For Q1 (titanic dataset), please see [hw1_q1.md](hw1_q1.md)
 - For Q2 (a) and (b), please see [hw1_q2_ab.pdf](hw1_q2_ab.pdf)
