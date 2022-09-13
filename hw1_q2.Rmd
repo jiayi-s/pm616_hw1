@@ -2,7 +2,7 @@
 title: "PM616 HW1 Q2"
 author: "Sylvia Shen"
 date: "2022-09-12"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}

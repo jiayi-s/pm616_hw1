@@ -2,7 +2,7 @@
 title: "PM 616 HW1 due 9/14"
 author: "Sylvia Shen"
 date: "2022-09-07"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
