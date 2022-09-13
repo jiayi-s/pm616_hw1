@@ -9,6 +9,7 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 library(titanic)
 library(tidyverse)
+library(GGally)
 library(tableone)
 library(caret)
 library(pROC)
@@ -36,12 +37,27 @@ tblone = CreateTableOne(vars = c("Age", "Fare", cat_vars),
 print(tblone, missing = TRUE)
 
 ```
-From the table above, we first noticed that fare and passenger class are quite different between the two groups; individuals who paid higher fare and in the first class are more likely to survive. In addition, only 109(18.9%) of the males survived whereas 233(74.2%) of the females managed to get out of the Titanic. 
+
+```{r, warning=FALSE, message=FALSE, fig.height = 4, fig.width = 9, fig.cap="Empirical distribution plots of 7 predictors in the data, stratified by survival status."}
+titanic_train %>% 
+  mutate(Pclass = as.factor(Pclass), 
+         Survived = as.factor(Survived)) %>% 
+  filter(Embarked != "") %>% 
+  select(c(Survived, Sex, Pclass, Embarked, Age, Fare, SibSp, Parch)) %>% 
+  ggduo(columnsX = c("Sex", "Pclass", "Embarked", "Age", "Fare", "SibSp", "Parch"), 
+        columnsY = "Survived"
+        )+
+  theme_bw()
+```
+
+From the table and the plot above, we first noticed that fare and passenger class are quite different between the two groups; individuals who paid higher fare and in the first class are more likely to survive. In addition, only 109(18.9%) of the males survived whereas 233(74.2%) of the females managed to get out of the Titanic. Another noticeable difference is that children under the age of 10 are more likely to survive. 
 
 Passenger name and ticket number can be viewed as duplicated identifiers such as passenger ID. Therefore, we drop passenger name and ticket number, and keep passenger ID to be the unique identifier of each data entry. 
 There are in total 687(77.1%) individuals in the training data that does not have available `Cabin` information. For other individuals that have `Cabin` recorded, most `Cabin` numbers are unique to every individual. Therefore, we decided to drop the variable `Cabin` as it does not provide useful grouping information in this data. 
 
 There are also 2 individuals in the training set that does not have the port of embarkation (`Embarked`) recorded. In addition, there are 177 missing values in `Age`. Age is potentially an important predictor because people's mobility usually decreases as age increases and the family size of the elderly might be different from those in their 20s, which could all be affecting their survival probability. Possible approaches to impute missing age values include: deterministic imputation with mean or median of all available ages in this data; random imputation by adding random errors to the mean or median; predicting age by building a model of age with other variables in this data set. The first two methods might be introducing additional bias to the final model. The third approach requires multiple imputations to minimize potential bias. In this analysis, we decided not to perform any imputation on age to avoid introducing additional bias in the final model. Therefore, we exclude these 179 individuals and continue analysis with the remaining 712 samples. In the testing set, we will apply the same exclusion criteria. 
+
+
 
 
 ```{r}
@@ -78,7 +94,7 @@ The original test set in the `titanic` data does not provide the survival status
 
 ## partition titanic_train
 set.seed(321) 
-rowTrain <- createDataPartition(y = titanic_train_cleaned$Survived, p = 0.8, list = FALSE)
+rowTrain = createDataPartition(y = titanic_train_cleaned$Survived, p = 0.8, list = FALSE)
 
 ## set up cross validation parameters
 ctrl = trainControl(method = "repeatedcv", 
@@ -146,7 +162,7 @@ ggplot(model.knn)
 
 ### AUC on the held-out set
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
 ## AUC on test set
 glm.pred.prob = predict(model.glm, newdata = titanic_train_cleaned[-rowTrain,3:ncol(titanic_train_cleaned)], type = "prob")[,2]
 glmn.pred.prob = predict(model.glmn, newdata = titanic_train_cleaned[-rowTrain,3:ncol(titanic_train_cleaned)], type = "prob")[,2]
@@ -185,9 +201,9 @@ accu.nb = mean(titanic_train_cleaned$Survived[-rowTrain] == nb.pred.accu)
 accu.knn = mean(titanic_train_cleaned$Survived[-rowTrain] == knn.pred.accu)
 
 cat("glm test set accuracy = ", round(accu.glm,4))
-cat("\nglmb test set accuracy = ", round(accu.glmn,4))
-cat("\nnb test set accuracy = ", round(accu.nb,4))
-cat("\nknn test set accuracy = ", round(accu.knn,4))
+cat("glmb test set accuracy = ", round(accu.glmn,4))
+cat("nb test set accuracy = ", round(accu.nb,4))
+cat("knn test set accuracy = ", round(accu.knn,4))
 ```
 
 
@@ -201,11 +217,11 @@ In addition to the four supervised learning models above, I also tried an ANN wi
 ```{r}
 ## ANN model
 
-normalizer <- layer_normalization(axis = -1L)
+normalizer = layer_normalization(axis = -1L)
 normalizer %>% adapt(as.matrix(titanic_train_cleaned[rowTrain, 3:ncol(titanic_train_cleaned)]))
 
 
-network <- keras_model_sequential() %>% 
+network = keras_model_sequential() %>% 
   normalizer() %>% 
   layer_dense(64, activation = "relu") %>% 
   layer_dense(1, activation = "sigmoid")

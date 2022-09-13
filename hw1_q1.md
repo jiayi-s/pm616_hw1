@@ -62,11 +62,28 @@ print(tblone, missing = TRUE)
     ##      Q                77 ( 8.6)     47 ( 8.6)     30 ( 8.8)         
     ##      S               644 (72.3)    427 (77.8)    217 (63.5)
 
-From the table above, we first noticed that fare and passenger class are
-quite different between the two groups; individuals who paid higher fare
-and in the first class are more likely to survive. In addition, only
-109(18.9%) of the males survived whereas 233(74.2%) of the females
-managed to get out of the Titanic.
+``` r
+titanic_train %>% 
+  mutate(Pclass = as.factor(Pclass), 
+         Survived = as.factor(Survived)) %>% 
+  filter(Embarked != "") %>% 
+  select(c(Survived, Sex, Pclass, Embarked, Age, Fare, SibSp, Parch)) %>% 
+  ggduo(columnsX = c("Sex", "Pclass", "Embarked", "Age", "Fare", "SibSp", "Parch"), 
+        columnsY = "Survived"
+        )+
+  theme_bw()
+```
+
+![Empirical distribution plots of 7 predictors in the data, stratified
+by survival status.](hw1_q1_files/figure-gfm/unnamed-chunk-2-1.png)
+
+From the table and the plot above, we first noticed that fare and
+passenger class are quite different between the two groups; individuals
+who paid higher fare and in the first class are more likely to survive.
+In addition, only 109(18.9%) of the males survived whereas 233(74.2%) of
+the females managed to get out of the Titanic. Another noticeable
+difference is that children under the age of 10 are more likely to
+survive.
 
 Passenger name and ticket number can be viewed as duplicated identifiers
 such as passenger ID. Therefore, we drop passenger name and ticket
@@ -133,7 +150,7 @@ model.
 ``` r
 ## partition titanic_train
 set.seed(321) 
-rowTrain <- createDataPartition(y = titanic_train_cleaned$Survived, p = 0.8, list = FALSE)
+rowTrain = createDataPartition(y = titanic_train_cleaned$Survived, p = 0.8, list = FALSE)
 
 ## set up cross validation parameters
 ctrl = trainControl(method = "repeatedcv", 
@@ -169,7 +186,7 @@ model.glmn = train(x = titanic_train_cleaned[rowTrain, 3:ncol(titanic_train_clea
 plot(model.glmn, xTrans = function(x) log(x))
 ```
 
-![](hw1_q1_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](hw1_q1_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ### Naive Bayes
 
@@ -187,7 +204,7 @@ model.nb = train(x = titanic_train_cleaned[rowTrain, 3:ncol(titanic_train_cleane
 plot(model.nb)
 ```
 
-![](hw1_q1_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](hw1_q1_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ### KNN
 
@@ -202,7 +219,7 @@ model.knn =  train(x = titanic_train_cleaned[rowTrain, 3:ncol(titanic_train_clea
 ggplot(model.knn)
 ```
 
-![](hw1_q1_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](hw1_q1_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ### AUC on the held-out set
 
@@ -214,34 +231,10 @@ nb.pred.prob = predict(model.nb, newdata = titanic_train_cleaned[-rowTrain,3:nco
 knn.pred.prob = predict(model.knn, newdata = titanic_train_cleaned[-rowTrain,3:ncol(titanic_train_cleaned)], type = "prob")[,2]
 
 roc.glm = roc(titanic_train_cleaned$Survived[-rowTrain], glm.pred.prob)
-```
-
-    ## Setting levels: control = Died, case = Survived
-
-    ## Setting direction: controls < cases
-
-``` r
 roc.glmn = roc(titanic_train_cleaned$Survived[-rowTrain], glmn.pred.prob)
-```
-
-    ## Setting levels: control = Died, case = Survived
-    ## Setting direction: controls < cases
-
-``` r
 roc.nb = roc(titanic_train_cleaned$Survived[-rowTrain], nb.pred.prob)
-```
-
-    ## Setting levels: control = Died, case = Survived
-    ## Setting direction: controls < cases
-
-``` r
 roc.knn = roc(titanic_train_cleaned$Survived[-rowTrain], knn.pred.prob)
-```
 
-    ## Setting levels: control = Died, case = Survived
-    ## Setting direction: controls < cases
-
-``` r
 auc = c(roc.glm$auc[1], roc.glmn$auc[1], roc.nb$auc[1], roc.knn$auc[1])
 
 plot(roc.glm, legacy.axes = TRUE) 
@@ -252,7 +245,7 @@ modelNames = c("glm","glmn","nb","knn")
 legend("bottomright", legend = paste0(modelNames, ": ", round(auc,3)), col = 1:6, lwd = 2)
 ```
 
-![](hw1_q1_files/figure-gfm/unnamed-chunk-8-1.png)<!-- --> From the plot
+![](hw1_q1_files/figure-gfm/unnamed-chunk-9-1.png)<!-- --> From the plot
 above, we can see that KNN, GLM, and regularized GLM has similar AUC on
 the held-out test set (0.841, 0.841, and 0.84 respectively), followed by
 the Naive Bayes model (0.817).
@@ -277,24 +270,21 @@ cat("glm test set accuracy = ", round(accu.glm,4))
     ## glm test set accuracy =  0.7801
 
 ``` r
-cat("\nglmb test set accuracy = ", round(accu.glmn,4))
+cat("glmb test set accuracy = ", round(accu.glmn,4))
 ```
 
-    ## 
     ## glmb test set accuracy =  0.7872
 
 ``` r
-cat("\nnb test set accuracy = ", round(accu.nb,4))
+cat("nb test set accuracy = ", round(accu.nb,4))
 ```
 
-    ## 
     ## nb test set accuracy =  0.7872
 
 ``` r
-cat("\nknn test set accuracy = ", round(accu.knn,4))
+cat("knn test set accuracy = ", round(accu.knn,4))
 ```
 
-    ## 
     ## knn test set accuracy =  0.7943
 
 KNN achieved the highest accuracy (0.794) on the held-out set among
@@ -310,7 +300,7 @@ accuracy on the held-out set did not beat the KNN model.
 ``` r
 ## ANN model
 
-normalizer <- layer_normalization(axis = -1L)
+normalizer = layer_normalization(axis = -1L)
 ```
 
     ## Loaded Tensorflow version 2.9.2
@@ -319,7 +309,7 @@ normalizer <- layer_normalization(axis = -1L)
 normalizer %>% adapt(as.matrix(titanic_train_cleaned[rowTrain, 3:ncol(titanic_train_cleaned)]))
 
 
-network <- keras_model_sequential() %>% 
+network = keras_model_sequential() %>% 
   normalizer() %>% 
   layer_dense(64, activation = "relu") %>% 
   layer_dense(1, activation = "sigmoid")
@@ -342,7 +332,7 @@ history = network %>% fit(as.matrix(titanic_train_cleaned[rowTrain, 3:ncol(titan
 plot(history)
 ```
 
-![](hw1_q1_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](hw1_q1_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 network %>% evaluate(
@@ -353,7 +343,7 @@ network %>% evaluate(
 ```
 
     ##      loss  accuracy 
-    ## 0.4354274 0.8014185
+    ## 0.4414988 0.8085107
 
 ### Output final prediction
 
